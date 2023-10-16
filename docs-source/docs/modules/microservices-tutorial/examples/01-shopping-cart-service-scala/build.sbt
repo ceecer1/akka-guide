@@ -29,7 +29,7 @@ run / javaOptions ++= sys.props
 Global / cancelable := false // ctrl-c
 
 val AkkaVersion = "2.8.5"
-val AkkaHttpVersion = "10.5.2"
+val AkkaHttpVersion = "10.5.3"
 val AkkaManagementVersion = "1.4.1"
 val AkkaPersistenceJdbcVersion = "5.2.1"
 val AlpakkaKafkaVersion = "4.0.2"
