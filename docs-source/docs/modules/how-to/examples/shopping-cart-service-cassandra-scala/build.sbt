@@ -45,6 +45,8 @@ dockerUsername := sys.props.get("docker.username")
 dockerRepository := sys.props.get("docker.registry")
 ThisBuild / dynverSeparator := "-"
 
+resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+
 // tag::akka-persistence-cassandra[]
 libraryDependencies ++= Seq(
   // end::akka-persistence-cassandra[]

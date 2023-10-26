@@ -54,6 +54,8 @@ dockerUsername := sys.props.get("docker.username")
 dockerRepository := sys.props.get("docker.registry")
 ThisBuild / dynverSeparator := "-"
 
+resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
   "com.typesafe.akka" %% "akka-stream" % AkkaVersion,

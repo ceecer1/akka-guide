@@ -44,6 +44,8 @@ dockerUsername := sys.props.get("docker.username")
 dockerRepository := sys.props.get("docker.registry")
 ThisBuild / dynverSeparator := "-"
 
+resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+
 // tag::dependencies-for-healthchecks[]
 libraryDependencies ++= Seq(
 // end::dependencies-for-healthchecks[]

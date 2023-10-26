@@ -20,6 +20,8 @@ Compile / scalacOptions ++= Seq(
 val AkkaVersion = "2.8.5"
 // end::telemetry-build-properties[]
 
+resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion)
 

@@ -28,6 +28,13 @@
 
     <!-- tag::telemetry-commercial-repository[] -->
     <repositories>
+        <!-- end::telemetry-commercial-repository[] -->
+        <repository>
+            <id>akka-repository</id>
+            <name>Akka library repository</name>
+            <url>https://repo.akka.io/maven</url>
+        </repository>
+        <!-- tag::telemetry-commercial-repository[] -->
         <repository>
             <id>lightbend-commercial</id>
             <name>Lightbend Commercial</name>
