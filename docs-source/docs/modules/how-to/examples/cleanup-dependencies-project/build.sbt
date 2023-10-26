@@ -4,7 +4,7 @@ organization := "com.lightbend.akka.samples"
 organizationHomepage := Some(url("https://akka.io"))
 licenses := Seq(("CC0", url("https://creativecommons.org/publicdomain/zero/1.0")))
 
-scalaVersion := "2.13.5"
+scalaVersion := "2.13.12"
 
 Compile / scalacOptions ++= Seq(
   "-target:11",
@@ -26,23 +26,23 @@ run / javaOptions ++= sys.props
   .fold(Seq.empty[String])(res => Seq(s"-Dconfig.resource=$res"))
 Global / cancelable := false // ctrl-c
 
-val AkkaVersion = "2.8.5"
-val AkkaHttpVersion = "10.5.3"
-val AkkaManagementVersion = "1.4.1"
+val AkkaVersion = "2.9.0"
+val AkkaHttpVersion = "10.6.0"
+val AkkaManagementVersion = "1.5.0"
 
 // tag::remove-akka-persistence-cassandra-version[]
 val AkkaPersistenceCassandraVersion = "1.1.0"
 // end::remove-akka-persistence-cassandra-version[]
 // tag::add-akka-persistence-jdbc-version[]
-val AkkaPersistenceJdbcVersion = "5.2.1"
+val AkkaPersistenceJdbcVersion = "5.3.0"
 // end::add-akka-persistence-jdbc-version[]
 // tag::remove-alpakka-kafka-version[]
-val AlpakkaKafkaVersion = "4.0.2"
+val AlpakkaKafkaVersion = "5.0.0"
 // end::remove-alpakka-kafka-version[]
 // tag::remove-akka-projection-version[]
-val AkkaProjectionVersion = "1.4.0"
+val AkkaProjectionVersion = "1.5.0"
 // end::remove-akka-projection-version[]
-val AkkaDiagnosticsVersion = "2.0.1"
+val AkkaDiagnosticsVersion = "2.1.0"
 
 // tag::remove-grpc-plugin[]
 enablePlugins(AkkaGrpcPlugin)
@@ -82,9 +82,6 @@ libraryDependencies ++= Seq(
   // end::replace-offset-store-for-projections-jdbc[]
    */
   "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-  // tag::remove-grpc-optional[]
-  "com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion,
-  // end::remove-grpc-optional[]
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
   "com.lightbend.akka.management" %% "akka-management" % AkkaManagementVersion,
   "com.lightbend.akka.management" %% "akka-management-cluster-http" % AkkaManagementVersion,

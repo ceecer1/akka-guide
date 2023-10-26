@@ -36,14 +36,6 @@ include::example$cleanup-dependencies-project/project/plugins.sbt[tag=remove-grp
 include::example$cleanup-dependencies-project/build.sbt[tag=remove-grpc-plugin]
 ----
 
-[start=3]
-If you are not serving any gRPC traffic, you may also remove the dependency to the Akka HTTP artifact that adds support for HTTP/2:
-
-[source,scala]
-.build.sbt
-----
-include::example$cleanup-dependencies-project/build.sbt[tag=remove-grpc-optional]
-----
 
 == Replace the Persistence plugin
 

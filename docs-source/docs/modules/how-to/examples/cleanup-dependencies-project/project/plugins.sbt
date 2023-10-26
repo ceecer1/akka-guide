@@ -1,5 +1,6 @@
 // tag::remove-grpc-plugin[]
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.3.4")
+resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.4.0")
 // end::remove-grpc-plugin[]
 
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.13")

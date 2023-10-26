@@ -4,7 +4,7 @@ organization := "com.lightbend.akka.samples"
 organizationHomepage := Some(url("https://akka.io"))
 licenses := Seq(("CC0", url("https://creativecommons.org/publicdomain/zero/1.0")))
 
-scalaVersion := "2.13.5"
+scalaVersion := "2.13.12"
 
 Compile / scalacOptions ++= Seq(
   "-target:11",
@@ -26,16 +26,16 @@ run / javaOptions ++= sys.props
   .fold(Seq.empty[String])(res => Seq(s"-Dconfig.resource=$res"))
 Global / cancelable := false // ctrl-c
 
-val AkkaVersion = "2.8.5"
-val AkkaHttpVersion = "10.5.3"
-val AkkaManagementVersion = "1.4.1"
+val AkkaVersion = "2.9.0"
+val AkkaHttpVersion = "10.6.0"
+val AkkaManagementVersion = "1.5.0"
 // tag::akka-persistence-cassandra[]
 val AkkaPersistenceCassandraVersion = "1.1.0"
 
 // end::akka-persistence-cassandra[]
-val AlpakkaKafkaVersion = "4.0.2"
-val AkkaProjectionVersion = "1.4.0"
-val AkkaDiagnosticsVersion = "2.0.1"
+val AlpakkaKafkaVersion = "5.0.0"
+val AkkaProjectionVersion = "1.5.0"
+val AkkaDiagnosticsVersion = "2.1.0"
 
 enablePlugins(AkkaGrpcPlugin)
 
@@ -69,16 +69,14 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
   "ch.qos.logback" % "logback-classic" % "1.2.11",
   "org.scalatest" %% "scalatest" % "3.1.2" % Test,
-  // 2. Using gRPC and/or protobuf
-  "com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion,
-  // 3. Using Akka Persistence
+  // 2. Using Akka Persistence
   "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,
   "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
   // tag::akka-persistence-cassandra[]
   "com.typesafe.akka" %% "akka-persistence-cassandra" % AkkaPersistenceCassandraVersion,
   // end::akka-persistence-cassandra[]
   "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
-  // 4. Querying or projecting data from Akka Persistence
+  // 3. Querying or projecting data from Akka Persistence
   "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
   "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
   // tag::akka-projection-cassandra[]

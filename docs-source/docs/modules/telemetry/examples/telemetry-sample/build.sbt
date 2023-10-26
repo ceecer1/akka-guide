@@ -5,7 +5,7 @@ ThisBuild / licenses := Seq(
   ("CC0", url("https://creativecommons.org/publicdomain/zero/1.0")))
 
 // tag::telemetry-build-properties[]
-ThisBuild / scalaVersion := "2.13.5"
+ThisBuild / scalaVersion := "2.13.12"
 // end::telemetry-build-properties[]
 
 Compile / scalacOptions ++= Seq(
@@ -17,7 +17,7 @@ Compile / scalacOptions ++= Seq(
   "-Xlint")
 
 // tag::telemetry-build-properties[]
-val AkkaVersion = "2.8.5"
+val AkkaVersion = "2.9.0"
 // end::telemetry-build-properties[]
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
