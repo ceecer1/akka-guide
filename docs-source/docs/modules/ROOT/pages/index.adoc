@@ -3,7 +3,6 @@
 
 include::partial$include.adoc[]
 
-
 === What is this guide about?
 This guide provides information to aid in understanding and using Akka.
 

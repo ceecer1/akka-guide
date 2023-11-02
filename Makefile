@@ -44,6 +44,7 @@ done:
 	@echo "${target_dir}"
 
 html-author-mode: clean docker-image
+	@echo "Renaming head-scripts.hbs to head-scripts.hbs.tmp"
 	mv docs-source/supplemental_ui/partials/head-scripts.hbs docs-source/supplemental_ui/partials/head-scripts.hbs.tmp
 	docker run \
 		-u $(shell id -u):$(shell id -g) \
@@ -52,6 +53,7 @@ html-author-mode: clean docker-image
 		-t ${antora_docker_image}:${antora_docker_image_tag} \
 		--cache-dir=./.cache/antora \
 		docs-source/author-mode-site.yml
+	@echo "Renaming head-scripts.hbs.tmp to head-scripts.hbs"
 	mv docs-source/supplemental_ui/partials/head-scripts.hbs.tmp docs-source/supplemental_ui/partials/head-scripts.hbs
 	@echo "Done ${target_dir}/index.html"
 

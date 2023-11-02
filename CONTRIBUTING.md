@@ -4,12 +4,6 @@ We follow the standard GitHub [fork & pull](https://help.github.com/articles/usi
 
 You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the README.md). The goal of these notes is to make your experience contributing to Akka as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
 
-# The Akka Community
-
-In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
-
-You may also check out these [other resources](https://akka.io/get-involved/).
-
 # Antora-based Akka Documentation
 
 This folder contains the sources for parts of the [Akka Guide web site](https://developer.lightbend.com/docs/akka-guide).
@@ -23,9 +17,7 @@ If you are unfamiliar with the project or with asciidoc, please read the contrib
 
 ## Antora extension
 
-Find some hints about the Lightbend Antora theme at https://lightbend.github.io/antora-supplemental-ui-lightbend-theme/build/site/index.html
-
-The theme sources are in a Lightbend-private project at https://github.com/lightbend/antora-supplemental-ui-lightbend-theme
+Find some hints about the Lightbend Antora theme at https://lightbend.github.io/antora-v3-lightbend-theme/build/site/index.html
 
 ## Contributing to the Akka Documentation
 
@@ -33,7 +25,7 @@ Detailed information about working with the documentation is provided in the [do
 
 ## Building the Documentation
 
-This part of the Akka documentation is built using [Antora](https://docs.antora.org/antora/2.3/), from asciidoc sources.
+This part of the Akka documentation is built using [Antora](https://docs.antora.org/antora/latest/), from asciidoc sources.
 The building process is managed by `make` using the [makefile](./Makefile) script.
 
 

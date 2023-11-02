@@ -12,10 +12,14 @@ content:
 
 ui:
   bundle:
-    url: https://lightbend.github.io/antora-supplemental-ui-lightbend-theme/default_ui/lightbend-theme-ui-002-bundle.zip
+    url: https://lightbend.github.io/antora-v3-lightbend-theme/lightbend-ui-bundle/antora-ui-default-bundle-lightbend-theme-bundle.zip
     snapshot: true
   supplemental_files: ./supplemental_ui
-    
+
+antora:
+  extensions:
+  - '@antora/lunr-extension'
+
 runtime:
   fetch: true
 
@@ -29,6 +33,7 @@ asciidoc:
     # the following turns on next and previous links in the new template
     page-pagination: ""
     page-toctitle: "On This Page"
+    page-searchplaceholder: "Search Akka Guide"
 
 output:
   dir: ./../target

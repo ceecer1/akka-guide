@@ -1,13 +1,6 @@
-FROM antora/antora:2.3.1
+FROM antora/antora:3.1.4
 
-# https://github.com/Mogztter/antora-lunr
-RUN yarn global add antora-lunr
-# https://github.com/Mogztter/antora-site-generator-lunr
-RUN yarn global add antora-site-generator-lunr
+RUN npm install -g @antora/lunr-extension
+ENV NODE_PATH /usr/local/lib/node_modules
 
-ENV DOCSEARCH_ENABLED=true
-ENV DOCSEARCH_ENGINE=lunr
-
-ENTRYPOINT ["docker-entrypoint.sh", "--stacktrace", "--generator", "antora-site-generator-lunr"]
-
-LABEL description="antora/antora image with some extensions"
+LABEL description="antora/antora image with lunr-extension"
