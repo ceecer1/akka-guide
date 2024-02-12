@@ -2,21 +2,18 @@ version: '2.2'
 services:
   postgres-db:
     image: postgres:latest
+    container_name: postgres_db
     ports:
       - 5432:5432
     environment:
-      POSTGRES_USER: shopping-cart
-      POSTGRES_PASSWORD: shopping-cart
-
-  # this second PostgresSQL is used when running test
-  postgres-db-test:
-    image: postgres:latest
-    ports:
-      - 5433:5432
-    environment:
-      POSTGRES_DB: shopping-cart
-      POSTGRES_USER: shopping-cart
-      POSTGRES_PASSWORD: shopping-cart
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ 'CMD', 'pg_isready', "-q", "-d", "postgres", "-U", "postgres" ]
+      interval: 5s
+      retries: 5
+      start_period: 5s
+      timeout: 5s
 
   # See dockerhub for different versions of kafka and zookeeper
   # https://hub.docker.com/r/wurstmeister/kafka/
@@ -28,6 +25,7 @@ services:
 
   kafka:
     image: wurstmeister/kafka:2.13-2.7.0
+    platform: linux/amd64
     ports:
       - "9092:9092"
     environment:
@@ -36,6 +34,7 @@ services:
 
   kafka-consumer:
     image: wurstmeister/kafka:2.13-2.7.0
+    platform: linux/amd64
     command: bash -c "mkdir -vp /tmp/kafka-logs && /opt/kafka_2.13-2.7.0/bin/kafk-console-consumer.sh --zookeeper zookeeper:2181 --from-beginning --topic-name > /tmp/kafka-logs/topic-name.log"
     ports:
       - "9094:9092"
@@ -47,6 +46,7 @@ services:
 
   wait-for-kafka:
     image: waisbrot/wait
+    platform: linux/amd64
     links:
       - kafka
     environment:

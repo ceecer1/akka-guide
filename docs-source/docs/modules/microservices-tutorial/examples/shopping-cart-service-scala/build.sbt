@@ -28,20 +28,21 @@ run / javaOptions ++= sys.props
 
 Global / cancelable := false // ctrl-c
 
-val AkkaVersion = "2.9.0"
+val AkkaVersion = "2.9.1"
 val AkkaHttpVersion = "10.6.0"
 val AkkaManagementVersion = "1.5.0"
-val AkkaPersistenceJdbcVersion = "5.3.0"
+val AkkaPersistenceR2dbcVersion = "1.2.1"
+val AkkaProjectionVersion =
+  sys.props.getOrElse("akka-projection.version", "1.5.2")
 val AlpakkaKafkaVersion = "5.0.0"
-val AkkaProjectionVersion = "1.5.0"
 val AkkaDiagnosticsVersion = "2.1.0"
-val ScalikeJdbcVersion = "3.5.0"
 
 enablePlugins(AkkaGrpcPlugin, JavaAppPackaging, DockerPlugin)
 
-dockerBaseImage := "docker.io/library/eclipse-temurin:17.0.3_7-jre-jammy"
+dockerBaseImage := "docker.io/library/eclipse-temurin:17.0.8.1_1-jre"
 dockerUsername := sys.props.get("docker.username")
 dockerRepository := sys.props.get("docker.registry")
+dockerBuildxPlatforms := Seq("linux/amd64")
 dockerUpdateLatest := true
 
 ThisBuild / dynverSeparator := "-"
@@ -66,19 +67,18 @@ libraryDependencies ++= Seq(
   "com.lightbend.akka" %% "akka-diagnostics" % AkkaDiagnosticsVersion,
   // Common dependencies for logging and testing
   "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-  "ch.qos.logback" % "logback-classic" % "1.2.11",
+  "ch.qos.logback" % "logback-classic" % "1.2.13",
   "org.scalatest" %% "scalatest" % "3.1.2" % Test,
   // 2. Using Akka Persistence
   "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,
   "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
-  "com.lightbend.akka" %% "akka-persistence-jdbc" % AkkaPersistenceJdbcVersion,
+  "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbcVersion,
   "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
   "org.postgresql" % "postgresql" % "42.2.18",
   // 3. Querying or projecting data from Akka Persistence
   "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
   "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
-  "com.lightbend.akka" %% "akka-projection-jdbc" % AkkaProjectionVersion,
-  "org.scalikejdbc" %% "scalikejdbc" % ScalikeJdbcVersion,
-  "org.scalikejdbc" %% "scalikejdbc-config" % ScalikeJdbcVersion,
+  "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaProjectionVersion,
+  "com.lightbend.akka" %% "akka-projection-grpc" % AkkaProjectionVersion,
   "com.typesafe.akka" %% "akka-stream-kafka" % AlpakkaKafkaVersion,
   "com.lightbend.akka" %% "akka-projection-testkit" % AkkaProjectionVersion % Test)
