@@ -1,112 +1,117 @@
-// tag::consumer[]
 package shopping.analytics
 
-import scala.concurrent.ExecutionContext
+//#initProjections
 import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
+
 import akka.Done
 import akka.actor.typed.ActorSystem
-import akka.kafka.CommitterSettings
-import akka.kafka.ConsumerSettings
-import akka.kafka.Subscriptions
-import akka.kafka.scaladsl.{ Committer, Consumer }
-import akka.stream.RestartSettings
-import akka.stream.scaladsl.RestartSource
-import com.google.protobuf.any.{ Any => ScalaPBAny }
-import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import org.apache.kafka.common.serialization.StringDeserializer
+import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
+import akka.persistence.Persistence
+import akka.persistence.query.typed.EventEnvelope
+import akka.projection.ProjectionBehavior
+import akka.projection.ProjectionId
+import akka.projection.eventsourced.scaladsl.EventSourcedProvider
+import akka.projection.grpc.consumer.scaladsl.GrpcReadJournal
+import akka.projection.r2dbc.scaladsl.R2dbcProjection
+import akka.projection.scaladsl.Handler
 import org.slf4j.LoggerFactory
-import shopping.cart.proto
+import shoppingcart.CheckedOut
+import shoppingcart.ItemAdded
+import shoppingcart.ItemQuantityAdjusted
+import shoppingcart.ItemRemoved
+import shoppingcart.ShoppingCartEventsProto
 
 object ShoppingCartEventConsumer {
+  //#initProjections
 
   private val log =
     LoggerFactory.getLogger("shopping.analytics.ShoppingCartEventConsumer")
 
-  def init(system: ActorSystem[_]): Unit = {
-    implicit val sys: ActorSystem[_] = system
-    implicit val ec: ExecutionContext =
-      system.executionContext
+  //#eventHandler
+  private class EventHandler(projectionId: ProjectionId)
+    extends Handler[EventEnvelope[AnyRef]] {
 
-    val topic = system.settings.config
-      .getString("shopping-analytics-service.shopping-cart-kafka-topic")
-    val consumerSettings =
-      ConsumerSettings(
-        system,
-        new StringDeserializer,
-        new ByteArrayDeserializer).withGroupId("shopping-cart-analytics")
-    val committerSettings = CommitterSettings(system)
+    override def start(): Future[Done] = {
+      log.info("Started Projection [{}].", projectionId.id)
+      super.start()
+    }
+    override def stop(): Future[Done] = {
+      log.info("Stopped Projection [{}]", projectionId.id)
+      super.stop()
+    }
 
-    RestartSource // <1>
-      .onFailuresWithBackoff(
-        RestartSettings(
-          minBackoff = 1.second,
-          maxBackoff = 30.seconds,
-          randomFactor = 0.1)) { () =>
-        Consumer
-          .committableSource(
-            consumerSettings,
-            Subscriptions.topics(topic)
-          ) // <2>
-          .mapAsync(1) { msg =>
-            handleRecord(msg.record).map(_ => msg.committableOffset)
-          }
-          .via(Committer.flow(committerSettings)) // <3>
-      }
-      .run()
-  }
-
-  private def handleRecord(
-      record: ConsumerRecord[String, Array[Byte]]): Future[Done] = {
-    val bytes = record.value()
-    val x = ScalaPBAny.parseFrom(bytes) // <4>
-    val typeUrl = x.typeUrl
-    try {
-      val inputBytes = x.value.newCodedInput()
-      val event =
-        typeUrl match {
-          case "shopping-cart-service/shoppingcart.ItemAdded" =>
-            proto.ItemAdded.parseFrom(inputBytes)
-          // end::consumer[]
-          case "shopping-cart-service/shoppingcart.ItemQuantityAdjusted" =>
-            proto.ItemQuantityAdjusted.parseFrom(inputBytes)
-          case "shopping-cart-service/shoppingcart.ItemRemoved" =>
-            proto.ItemRemoved.parseFrom(inputBytes)
-          // tag::consumer[]
-          case "shopping-cart-service/shoppingcart.CheckedOut" =>
-            proto.CheckedOut.parseFrom(inputBytes)
-          case _ =>
-            throw new IllegalArgumentException(
-              s"unknown record type [$typeUrl]")
-        }
+    override def process(envelope: EventEnvelope[AnyRef]): Future[Done] = {
+      val event = envelope.event
 
       event match {
-        case proto.ItemAdded(cartId, itemId, quantity, _) =>
-          log.info("ItemAdded: {} {} to cart {}", quantity, itemId, cartId)
-        // end::consumer[]
-        case proto.ItemQuantityAdjusted(cartId, itemId, quantity, _) =>
-          log.info(
-            "ItemQuantityAdjusted: {} {} to cart {}",
-            quantity,
-            itemId,
-            cartId)
-        case proto.ItemRemoved(cartId, itemId, _) =>
-          log.info("ItemRemoved: {} removed from cart {}", itemId, cartId)
-        // tag::consumer[]
-        case proto.CheckedOut(cartId, _) =>
-          log.info("CheckedOut: cart {} checked out", cartId)
+        case itemAdded: ItemAdded =>
+          log.debug(
+            "Projection [{}] consumed ItemAdded for cart {}, added {} {}. Total [{}] events.",
+            projectionId.id,
+            itemAdded.cartId,
+            itemAdded.quantity,
+            itemAdded.itemId)
+        case quantityAdjusted: ItemQuantityAdjusted =>
+          log.debug(
+            "Projection [{}] consumed ItemQuantityAdjusted for cart {}, changed {} {}. Total [{}] events.",
+            projectionId.id,
+            quantityAdjusted.cartId,
+            quantityAdjusted.quantity,
+            quantityAdjusted.itemId)
+        case itemRemoved: ItemRemoved =>
+          log.debug(
+            "Projection [{}] consumed ItemRemoved for cart {}, removed {}. Total [{}] events.",
+            projectionId.id,
+            itemRemoved.cartId,
+            itemRemoved.itemId)
+        case checkedOut: CheckedOut =>
+          log.debug(
+            "Projection [{}] consumed CheckedOut for cart {}. Total [{}] events.",
+            projectionId.id,
+            checkedOut.cartId)
+        case unknown =>
+          throw new IllegalArgumentException(s"Unknown event $unknown")
       }
-
       Future.successful(Done)
-    } catch {
-      case NonFatal(e) =>
-        log.error("Could not process event of type [{}]", typeUrl, e)
-        // continue with next
-        Future.successful(Done)
     }
+  }
+  //#eventHandler
+
+  //#initProjections
+  def init(system: ActorSystem[_]): Unit = {
+    implicit val sys: ActorSystem[_] = system
+    val numberOfProjectionInstances = 16
+    val projectionName: String = "cart-events"
+    val sliceRanges =
+      Persistence(system).sliceRanges(numberOfProjectionInstances)
+
+    val eventsBySlicesQuery =
+      GrpcReadJournal(List(ShoppingCartEventsProto.javaDescriptor))
+
+    ShardedDaemonProcess(system).init(
+      projectionName,
+      numberOfProjectionInstances,
+      { idx =>
+        val sliceRange = sliceRanges(idx)
+        val projectionKey =
+          s"${eventsBySlicesQuery.streamId}-${sliceRange.min}-${sliceRange.max}"
+        val projectionId = ProjectionId.of(projectionName, projectionKey)
+
+        val sourceProvider = EventSourcedProvider.eventsBySlices[AnyRef](
+          system,
+          eventsBySlicesQuery,
+          eventsBySlicesQuery.streamId,
+          sliceRange.min,
+          sliceRange.max)
+
+        ProjectionBehavior(
+          R2dbcProjection.atLeastOnceAsync(
+            projectionId,
+            None,
+            sourceProvider,
+            () => new EventHandler(projectionId)))
+      })
   }
 
 }
-// end::consumer[]
+//#initProjections
