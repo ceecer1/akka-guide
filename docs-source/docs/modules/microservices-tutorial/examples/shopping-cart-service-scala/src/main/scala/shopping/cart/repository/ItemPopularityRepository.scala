@@ -1,11 +1,13 @@
 package shopping.cart.repository
 
-import scalikejdbc._
+import akka.projection.r2dbc.scaladsl.R2dbcSession
+
+import scala.concurrent.Future
 
 // tag::trait[]
 trait ItemPopularityRepository {
-  def update(session: ScalikeJdbcSession, itemId: String, delta: Int): Unit
-  def getItem(session: ScalikeJdbcSession, itemId: String): Option[Long]
+  def update(session: R2dbcSession, itemId: String, delta: Int): Future[Long]
+  def getItem(session: R2dbcSession, itemId: String): Future[Option[Long]]
 }
 // end::trait[]
 
@@ -13,40 +15,29 @@ trait ItemPopularityRepository {
 class ItemPopularityRepositoryImpl() extends ItemPopularityRepository {
 
   override def update(
-      session: ScalikeJdbcSession,
+      session: R2dbcSession,
       itemId: String,
-      delta: Int): Unit = {
-    session.db.withinTx { implicit dbSession =>
-      // This uses the PostgreSQL `ON CONFLICT` feature
-      // Alternatively, this can be implemented by first issuing the `UPDATE`
-      // and checking for the updated rows count. If no rows got updated issue
-      // the `INSERT` instead.
-      sql"""
-           INSERT INTO item_popularity (itemid, count) VALUES ($itemId, $delta)
-           ON CONFLICT (itemid) DO UPDATE SET count = item_popularity.count + $delta
-         """.executeUpdate().apply()
-    }
+      delta: Int): Future[Long] = {
+    val stmt = session.createStatement(
+      """
+        |INSERT INTO item_popularity (itemid, count) VALUES ($itemId, $delta)
+        | ON CONFLICT(itemid) DO UPDATE SET count = item_popularity.count + $delta
+        |""".stripMargin)
+      .bind(0, itemId)
+      .bind(1, delta)
+    session.updateOne(stmt)
   }
 
   override def getItem(
-      session: ScalikeJdbcSession,
-      itemId: String): Option[Long] = {
-    if (session.db.isTxAlreadyStarted) {
-      session.db.withinTx { implicit dbSession =>
-        select(itemId)
-      }
-    } else {
-      session.db.readOnly { implicit dbSession =>
-        select(itemId)
-      }
-    }
+      session: R2dbcSession,
+      itemId: String): Future[Option[Long]] = {
+
+    val stmt = session.createStatement(
+      """
+        |SELECT count FROM item_popularity WHERE itemid = $itemId
+        |""".stripMargin)
+    session.selectOne(stmt)(row => row.get("count", classOf[Long]))
   }
 
-  private def select(itemId: String)(implicit dbSession: DBSession) = {
-    sql"SELECT count FROM item_popularity WHERE itemid = $itemId"
-      .map(_.long("count"))
-      .toOption()
-      .apply()
-  }
 }
 // end::impl[]

@@ -1,6 +1,7 @@
 package shopping.analytics
 
 //#initProjections
+
 import scala.concurrent.Future
 
 import akka.Done
@@ -28,13 +29,16 @@ object ShoppingCartEventConsumer {
     LoggerFactory.getLogger("shopping.analytics.ShoppingCartEventConsumer")
 
   //#eventHandler
-  private class EventHandler(projectionId: ProjectionId)
+  private class EventHandler(projectionId: ProjectionId,
+                             streamId: String,
+                             system: ActorSystem[_])
     extends Handler[EventEnvelope[AnyRef]] {
 
     override def start(): Future[Done] = {
       log.info("Started Projection [{}].", projectionId.id)
       super.start()
     }
+
     override def stop(): Future[Done] = {
       log.info("Stopped Projection [{}]", projectionId.id)
       super.stop()
@@ -109,7 +113,11 @@ object ShoppingCartEventConsumer {
             projectionId,
             None,
             sourceProvider,
-            () => new EventHandler(projectionId)))
+            () => new EventHandler(
+              projectionId,
+              eventsBySlicesQuery.streamId,
+              sys
+            )))
       })
   }
 
