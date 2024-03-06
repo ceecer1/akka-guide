@@ -9,7 +9,7 @@ import akka.projection.r2dbc.scaladsl.R2dbcSession
 import org.slf4j.LoggerFactory
 import shopping.cart.repository.ItemPopularityRepository
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 class ItemPopularityProjectionHandler(
     slice: String,

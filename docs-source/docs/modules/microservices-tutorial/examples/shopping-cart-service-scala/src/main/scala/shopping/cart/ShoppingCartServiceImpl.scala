@@ -1,14 +1,15 @@
 package shopping.cart
 
 import java.util.concurrent.TimeoutException
-import scala.concurrent.{ ExecutionContext, Future }
-import akka.actor.typed.{ ActorSystem, DispatcherSelector }
+import scala.concurrent.Future
+import akka.actor.typed.ActorSystem
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.grpc.GrpcServiceException
+import akka.projection.r2dbc.scaladsl.R2dbcSession
 import akka.util.Timeout
 import io.grpc.Status
 import org.slf4j.LoggerFactory
-import shopping.cart.repository.{ ItemPopularityRepository, ScalikeJdbcSession }
+import shopping.cart.repository.ItemPopularityRepository
 
 // tag::moreOperations[]
 import akka.actor.typed.ActorRef
@@ -33,12 +34,12 @@ class ShoppingCartServiceImpl(
 
   private val sharding = ClusterSharding(system)
 
-  // tag::getItemPopularity[]
-  private val blockingJdbcExecutor: ExecutionContext =
-    system.dispatchers.lookup(
-      DispatcherSelector
-        .fromConfig("akka.projection.jdbc.blocking-jdbc-dispatcher")
-    ) // <2>
+//  // tag::getItemPopularity[]
+//  private val blockingJdbcExecutor: ExecutionContext =
+//    system.dispatchers.lookup(
+//      DispatcherSelector
+//        .fromConfig("akka.projection.jdbc.blocking-jdbc-dispatcher")
+//    ) // <2>
 
   // end::getItemPopularity[]
   override def addItem(in: proto.AddItemRequest): Future[proto.Cart] = {
@@ -117,11 +118,9 @@ class ShoppingCartServiceImpl(
   // tag::getItemPopularity[]
   override def getItemPopularity(in: proto.GetItemPopularityRequest)
       : Future[proto.GetItemPopularityResponse] = {
-    Future { // <3>
-      ScalikeJdbcSession.withSession { session =>
+      R2dbcSession.withSession(system) { session =>
         itemPopularityRepository.getItem(session, in.itemId)
-      }
-    }(blockingJdbcExecutor).map {
+      }.map {
       case Some(count) =>
         proto.GetItemPopularityResponse(in.itemId, count)
       case None =>

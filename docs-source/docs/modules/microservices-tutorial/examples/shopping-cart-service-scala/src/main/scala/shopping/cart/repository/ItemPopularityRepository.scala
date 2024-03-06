@@ -18,25 +18,27 @@ class ItemPopularityRepositoryImpl() extends ItemPopularityRepository {
       session: R2dbcSession,
       itemId: String,
       delta: Int): Future[Long] = {
-    val stmt = session.createStatement(
-      """
-        |INSERT INTO item_popularity (itemid, count) VALUES ($itemId, $delta)
+    session.updateOne(session.createStatement(
+      s"""
+        |INSERT INTO item_popularity (itemid, count) VALUES ('$itemId', $delta)
         | ON CONFLICT(itemid) DO UPDATE SET count = item_popularity.count + $delta
-        |""".stripMargin)
-      .bind(0, itemId)
-      .bind(1, delta)
-    session.updateOne(stmt)
+        |""".stripMargin
+    ))
   }
 
   override def getItem(
       session: R2dbcSession,
       itemId: String): Future[Option[Long]] = {
 
-    val stmt = session.createStatement(
-      """
-        |SELECT count FROM item_popularity WHERE itemid = $itemId
-        |""".stripMargin)
-    session.selectOne(stmt)(row => row.get("count", classOf[Long]))
+    val selectStmt =
+      s"""
+        |SELECT count FROM item_popularity WHERE itemid = '$itemId'
+        |""".stripMargin
+
+    session.selectOne(session.createStatement(selectStmt)) {
+      row =>
+        row.get("count", classOf[java.lang.Long])
+    }
   }
 
 }

@@ -6,7 +6,6 @@ import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
 import akka.persistence.query.Offset
 import akka.persistence.r2dbc.query.scaladsl.R2dbcReadJournal
-import akka.projection.eventsourced.EventEnvelope
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.scaladsl.SourceProvider
 import akka.projection.{ProjectionBehavior, ProjectionId}
@@ -21,12 +20,14 @@ object ItemPopularityProjection {
             system: ActorSystem[_],
             repository: ItemPopularityRepository): Unit = {
 
+    implicit val sys = system
+
     def sourceProvider(sliceRange: Range): SourceProvider[Offset, EventEnvelope[ShoppingCart.Event]] =
       EventSourcedProvider
         .eventsBySlices[ShoppingCart.Event](
           system,
           readJournalPluginId = R2dbcReadJournal.Identifier,
-          eventsBySlicesQuery.streamId,
+          "ShoppingCart",
           sliceRange.min,
           sliceRange.max)
 
