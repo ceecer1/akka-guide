@@ -1,8 +1,11 @@
 syntax = "proto3";
 
+option java_multiple_files = true;
+option java_package = "shopping.cart.proto";
+
 package shoppingcart;
 
-// Events published to external services
+// Events published to Kafka
 
 message ItemAdded {
     string cartId = 1;

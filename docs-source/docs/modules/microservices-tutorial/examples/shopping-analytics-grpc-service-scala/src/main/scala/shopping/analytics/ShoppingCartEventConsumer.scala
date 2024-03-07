@@ -16,11 +16,11 @@ import akka.projection.grpc.consumer.scaladsl.GrpcReadJournal
 import akka.projection.r2dbc.scaladsl.R2dbcProjection
 import akka.projection.scaladsl.Handler
 import org.slf4j.LoggerFactory
-import shoppingcart.CheckedOut
-import shoppingcart.ItemAdded
-import shoppingcart.ItemQuantityAdjusted
-import shoppingcart.ItemRemoved
-import shoppingcart.ShoppingCartEventsProto
+import shopping.cart.proto.CheckedOut
+import shopping.cart.proto.ItemAdded
+import shopping.cart.proto.ItemQuantityAdjusted
+import shopping.cart.proto.ItemRemoved
+import shopping.cart.proto.ShoppingCartEventsProto
 
 object ShoppingCartEventConsumer {
   //#initProjections
@@ -84,7 +84,7 @@ object ShoppingCartEventConsumer {
   //#initProjections
   def init(system: ActorSystem[_]): Unit = {
     implicit val sys: ActorSystem[_] = system
-    val numberOfProjectionInstances = 16
+    val numberOfProjectionInstances = 4
     val projectionName: String = "cart-events"
     val sliceRanges =
       Persistence(system).sliceRanges(numberOfProjectionInstances)

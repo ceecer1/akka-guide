@@ -10,9 +10,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
-// tag::importEntityContext[]
-import akka.cluster.sharding.typed.scaladsl.EntityContext
-// end::importEntityContext[]
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
@@ -69,6 +66,18 @@ object ShoppingCart {
 
     def toSummary: Summary =
       Summary(items, isCheckedOut)
+
+    //#tags
+    def totalQuantity: Int =
+      items.map { case (_, quantity) => quantity }.sum
+
+    def tags: Set[String] = {
+      val total = totalQuantity
+      if (total == 0) Set.empty
+      else if (total >= 100) Set(LargeQuantityTag)
+      else if (total >= 10) Set(MediumQuantityTag)
+      else Set(SmallQuantityTag)
+    }
   }
   object State {
     val empty =
@@ -159,23 +168,32 @@ object ShoppingCart {
     EntityTypeKey[Command]("ShoppingCart")
   // tag::tagging[]
 
+  //#tags
+  val SmallQuantityTag = "small"
+  val MediumQuantityTag = "medium"
+  val LargeQuantityTag = "large"
+
+  //#tags
+
   val tags = Vector.tabulate(5)(i => s"carts-$i")
 
   // tag::howto-write-side-without-role[]
   def init(system: ActorSystem[_]): Unit = {
-    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
-      entityContext =>
-        val i = math.abs(entityContext.entityId.hashCode % tags.size)
-        val selectedTag = tags(i)
-        ShoppingCart(entityContext.entityId, selectedTag)
-    }
-    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
+//    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
+//      entityContext =>
+//        val i = math.abs(entityContext.entityId.hashCode % tags.size)
+//        val selectedTag = tags(i)
+//        ShoppingCart(entityContext.entityId, selectedTag)
+//    }
+//    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
+    ClusterSharding(system).init(Entity(EntityKey)(entityContext =>
+      ShoppingCart(entityContext.entityId)))
   }
   // end::howto-write-side-without-role[]
   // end::tagging[]
 
   // tag::withTagger[]
-  def apply(cartId: String, projectionTag: String): Behavior[Command] = {
+  def apply(cartId: String): Behavior[Command] = {
     EventSourcedBehavior
       .withEnforcedReplies[Command, Event, State](
         persistenceId = PersistenceId(EntityKey.name, cartId),
@@ -183,9 +201,11 @@ object ShoppingCart {
         commandHandler =
           (state, command) => handleCommand(cartId, state, command),
         eventHandler = (state, event) => handleEvent(state, event))
-      .withTagger(_ => Set(projectionTag)) // <1>
+      .withTaggerForState{ case (state, _) =>
+        state.tags
+      } // <1>
       .withRetention(RetentionCriteria
-        .snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
+        .snapshotEvery(numberOfEvents = 100))
       .onPersistFailure(
         SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
   }

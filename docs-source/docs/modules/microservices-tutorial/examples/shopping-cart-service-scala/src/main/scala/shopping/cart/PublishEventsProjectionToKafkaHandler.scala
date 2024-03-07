@@ -3,27 +3,28 @@ package shopping.cart
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-
 import akka.Done
 import akka.actor.typed.ActorSystem
 import akka.kafka.scaladsl.SendProducer
-import akka.projection.eventsourced.EventEnvelope
-import akka.projection.scaladsl.Handler
-import com.google.protobuf.any.{ Any => ScalaPBAny }
+import akka.persistence.query.typed.EventEnvelope
+import akka.projection.r2dbc.scaladsl.{R2dbcHandler, R2dbcSession}
+import com.google.protobuf.any.{Any => ScalaPBAny}
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
 
-class PublishEventsProjectionHandler(
-    system: ActorSystem[_],
-    topic: String,
-    sendProducer: SendProducer[String, Array[Byte]]) // <1>
-    extends Handler[EventEnvelope[ShoppingCart.Event]] {
+class PublishEventsProjectionToKafkaHandler(
+                                      system: ActorSystem[_],
+                                      slice: String,
+                                      topic: String,
+                                      sendProducer: SendProducer[String, Array[Byte]]) // <1>
+  extends R2dbcHandler[EventEnvelope[ShoppingCart.Event]] {
   private val log = LoggerFactory.getLogger(getClass)
   private implicit val ec: ExecutionContext =
     system.executionContext
 
   override def process(
-      envelope: EventEnvelope[ShoppingCart.Event]): Future[Done] = {
+                        session: R2dbcSession,
+                        envelope: EventEnvelope[ShoppingCart.Event]): Future[Done] = {
     val event = envelope.event
 
     // using the cartId as the key and `DefaultPartitioner` will select partition based on the key
@@ -32,8 +33,9 @@ class PublishEventsProjectionHandler(
     val producerRecord = new ProducerRecord(topic, key, serialize(event)) // <2>
     val result = sendProducer.send(producerRecord).map { recordMetadata =>
       log.info(
-        "Published event [{}] to topic/partition {}/{}",
+        "Published event [{}] for slice {} to topic/partition {}/{}",
         event,
+        slice,
         topic,
         recordMetadata.partition)
       Done

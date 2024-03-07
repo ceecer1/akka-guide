@@ -19,13 +19,15 @@ object ShoppingCartServer {
       interface: String,
       port: Int,
       system: ActorSystem[_],
-      grpcService: proto.ShoppingCartService): Unit = {
+      grpcService: proto.ShoppingCartService,
+      eventProducerService: PartialFunction[HttpRequest, Future[HttpResponse]]): Unit = {
     implicit val sys: ActorSystem[_] = system
     implicit val ec: ExecutionContext =
       system.executionContext
 
     val service: HttpRequest => Future[HttpResponse] =
       ServiceHandler.concatOrNotFound(
+        eventProducerService,
         proto.ShoppingCartServiceHandler.partial(grpcService),
         // ServerReflection enabled to support grpcurl without import-path and proto parameters
         ServerReflection.partial(List(proto.ShoppingCartService))

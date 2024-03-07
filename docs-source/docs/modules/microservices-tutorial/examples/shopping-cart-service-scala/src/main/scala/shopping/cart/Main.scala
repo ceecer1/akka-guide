@@ -39,11 +39,13 @@ object Main {
     val itemPopularityRepository = new ItemPopularityRepositoryImpl()
     ItemPopularityProjection.init(system, itemPopularityRepository)
 
-//    PublishEventsProjection.init(system)
+//    PublishEventsProjectionToKafka.init(system)
 
     // tag::SendOrderProjection[]
-    SendOrderProjection.init(system, orderService) // <1>
+//    SendOrderProjection.init(system, orderService) // <1>
     // end::SendOrderProjection[]
+
+    val eventProducerService = PublishEventsGrpc.eventProducerService(system)
 
     val grpcInterface =
       system.settings.config.getString("shopping-cart-service.grpc.interface")
@@ -51,7 +53,7 @@ object Main {
       system.settings.config.getInt("shopping-cart-service.grpc.port")
     val grpcService =
       new ShoppingCartServiceImpl(system, itemPopularityRepository)
-    ShoppingCartServer.start(grpcInterface, grpcPort, system, grpcService)
+    ShoppingCartServer.start(grpcInterface, grpcPort, system, grpcService, eventProducerService)
     // tag::SendOrderProjection[]
   }
 

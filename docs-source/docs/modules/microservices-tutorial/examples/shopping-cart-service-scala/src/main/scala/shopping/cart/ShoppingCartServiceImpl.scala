@@ -34,13 +34,6 @@ class ShoppingCartServiceImpl(
 
   private val sharding = ClusterSharding(system)
 
-//  // tag::getItemPopularity[]
-//  private val blockingJdbcExecutor: ExecutionContext =
-//    system.dispatchers.lookup(
-//      DispatcherSelector
-//        .fromConfig("akka.projection.jdbc.blocking-jdbc-dispatcher")
-//    ) // <2>
-
   // end::getItemPopularity[]
   override def addItem(in: proto.AddItemRequest): Future[proto.Cart] = {
     logger.info("addItem {} to cart {}", in.itemId, in.cartId)
