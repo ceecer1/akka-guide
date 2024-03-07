@@ -5,9 +5,10 @@ import scala.concurrent.Future
 
 import akka.Done
 import akka.actor.typed.ActorSystem
+import akka.persistence.query.typed.EventEnvelope
+import akka.projection.r2dbc.scaladsl.R2dbcHandler
+import akka.projection.r2dbc.scaladsl.R2dbcSession
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import akka.projection.eventsourced.EventEnvelope
-import akka.projection.scaladsl.Handler
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import shopping.order.proto.Item
@@ -15,9 +16,9 @@ import shopping.order.proto.OrderRequest
 import shopping.order.proto.ShoppingOrderService
 
 class SendOrderProjectionHandler(
-    system: ActorSystem[_],
-    orderService: ShoppingOrderService) // <1>
-    extends Handler[EventEnvelope[ShoppingCart.Event]] {
+                                  system: ActorSystem[_],
+                                  orderService: ShoppingOrderService) // <1>
+  extends R2dbcHandler[EventEnvelope[ShoppingCart.Event]] {
   private val log = LoggerFactory.getLogger(getClass)
   private implicit val ec: ExecutionContext =
     system.executionContext
@@ -28,7 +29,8 @@ class SendOrderProjectionHandler(
       system.settings.config.getDuration("shopping-cart-service.ask-timeout"))
 
   override def process(
-      envelope: EventEnvelope[ShoppingCart.Event]): Future[Done] = {
+                        session: R2dbcSession,
+                        envelope: EventEnvelope[ShoppingCart.Event]): Future[Done] = {
     envelope.event match {
       case checkout: ShoppingCart.CheckedOut =>
         sendOrder(checkout)

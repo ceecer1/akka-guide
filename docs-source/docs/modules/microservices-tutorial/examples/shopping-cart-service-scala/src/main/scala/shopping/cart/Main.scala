@@ -9,8 +9,6 @@ import scala.util.control.NonFatal
 
 //import akka.actor.CoordinatedShutdown
 import shopping.cart.repository.ItemPopularityRepositoryImpl
-//import shopping.cart.repository.ScalikeJdbcSetup
-// tag::SendOrderProjection[]
 import shopping.order.proto.{ ShoppingOrderService, ShoppingOrderServiceClient }
 import akka.grpc.GrpcClientSettings
 
@@ -32,8 +30,6 @@ object Main {
   }
 
   def init(system: ActorSystem[_], orderService: ShoppingOrderService): Unit = {
-    // end::SendOrderProjection[]
-//    ScalikeJdbcSetup.init(system)
 
     AkkaManagement(system).start()
     ClusterBootstrap(system).start()
@@ -46,7 +42,7 @@ object Main {
 //    PublishEventsProjection.init(system)
 
     // tag::SendOrderProjection[]
-//    SendOrderProjection.init(system, orderService) // <1>
+    SendOrderProjection.init(system, orderService) // <1>
     // end::SendOrderProjection[]
 
     val grpcInterface =

@@ -20,8 +20,6 @@ object ItemPopularityProjection {
             system: ActorSystem[_],
             repository: ItemPopularityRepository): Unit = {
 
-    implicit val sys = system
-
     def sourceProvider(sliceRange: Range): SourceProvider[Offset, EventEnvelope[ShoppingCart.Event]] =
       EventSourcedProvider
         .eventsBySlices[ShoppingCart.Event](
@@ -34,7 +32,7 @@ object ItemPopularityProjection {
     def projection(sliceRange: Range): Projection[EventEnvelope[ShoppingCart.Event]] = {
       val minSlice = sliceRange.min
       val maxSlice = sliceRange.max
-      val projectionId = ProjectionId("ShoppingCarts", s"carts-$minSlice-$maxSlice")
+      val projectionId = ProjectionId("ItemPopularityProjection", s"carts-$minSlice-$maxSlice")
 
       R2dbcProjection
         .exactlyOnce(
@@ -44,11 +42,11 @@ object ItemPopularityProjection {
           handler = () =>
             new ItemPopularityProjectionHandler(s"carts-$minSlice-$maxSlice",
               system,
-              repository))
+              repository))(system)
     }
 
     ShardedDaemonProcess(system).initWithContext(
-      name = "ShoppingCartProjection",
+      name = "ItemPopularityProjection",
       initialNumberOfInstances = 4,
       behaviorFactory = { daemonContext =>
         val sliceRanges =

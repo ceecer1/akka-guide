@@ -35,6 +35,7 @@ class ItemPopularityProjectionHandler(
       case ShoppingCart.ItemRemoved(_, itemId, oldQuantity) =>
         repo.update(session, itemId, 0 - oldQuantity).flatMap(_ => logItemCount(session, itemId))
 
+      case _: ShoppingCart.CheckedOut => Future.successful(Done)
     }
   }
 
