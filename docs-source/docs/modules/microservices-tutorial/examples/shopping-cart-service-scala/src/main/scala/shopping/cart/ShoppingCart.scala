@@ -173,19 +173,8 @@ object ShoppingCart {
   val MediumQuantityTag = "medium"
   val LargeQuantityTag = "large"
 
-  //#tags
-
-  val tags = Vector.tabulate(5)(i => s"carts-$i")
-
   // tag::howto-write-side-without-role[]
   def init(system: ActorSystem[_]): Unit = {
-//    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
-//      entityContext =>
-//        val i = math.abs(entityContext.entityId.hashCode % tags.size)
-//        val selectedTag = tags(i)
-//        ShoppingCart(entityContext.entityId, selectedTag)
-//    }
-//    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
     ClusterSharding(system).init(Entity(EntityKey)(entityContext =>
       ShoppingCart(entityContext.entityId)))
   }

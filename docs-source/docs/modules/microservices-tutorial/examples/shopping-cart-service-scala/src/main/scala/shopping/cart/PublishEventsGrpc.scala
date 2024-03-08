@@ -17,11 +17,13 @@ object PublishEventsGrpc {
 
   def eventProducerService(system: ActorSystem[_])
   : PartialFunction[HttpRequest, Future[HttpResponse]] = {
-    val transformation = Transformation.empty
-      .registerAsyncEnvelopeMapper[ShoppingCart.ItemAdded, proto.ItemQuantityAdjusted](envelope =>
+    val transformation = Transformation.identity
+      .registerAsyncEnvelopeMapper[ShoppingCart.ItemAdded, proto.ItemAdded](envelope =>
         Future.successful(Some(transformItemUpdated(envelope))))
       .registerAsyncEnvelopeMapper[ShoppingCart.ItemQuantityAdjusted, proto.ItemQuantityAdjusted](envelope =>
         Future.successful(Some(transformItemAdjusted(envelope))))
+      .registerAsyncEnvelopeMapper[ShoppingCart.ItemRemoved, proto.ItemRemoved](envelope =>
+        Future.successful(Some(transformItemRemoved(envelope))))
       .registerAsyncEnvelopeMapper[ShoppingCart.CheckedOut, proto.CheckedOut](envelope =>
         Future.successful(Some(transformCheckedOut(envelope))))
 
@@ -47,9 +49,9 @@ object PublishEventsGrpc {
 
   //#transformItemUpdated
   private def transformItemUpdated(
-                            envelope: EventEnvelope[ShoppingCart.ItemAdded]): proto.ItemQuantityAdjusted = {
+                            envelope: EventEnvelope[ShoppingCart.ItemAdded]): proto.ItemAdded = {
     val event = envelope.event
-    proto.ItemQuantityAdjusted(
+    proto.ItemAdded(
       cartId = PersistenceId.extractEntityId(envelope.persistenceId),
       itemId = event.itemId,
       quantity = event.quantity)
@@ -66,6 +68,16 @@ object PublishEventsGrpc {
       quantity = event.newQuantity)
   }
   //#transformItemAdjusted
+
+  //#transformItemRemoved
+  private def transformItemRemoved(
+                                    envelope: EventEnvelope[ShoppingCart.ItemRemoved]): proto.ItemRemoved = {
+    val event = envelope.event
+    proto.ItemRemoved(
+      cartId = PersistenceId.extractEntityId(envelope.persistenceId),
+      itemId = event.itemId)
+  }
+  //#transformItemRemoved
 
   private def transformCheckedOut(envelope: typed.EventEnvelope[ShoppingCart.CheckedOut]): proto.CheckedOut =
     proto.CheckedOut(PersistenceId.extractEntityId(envelope.persistenceId))

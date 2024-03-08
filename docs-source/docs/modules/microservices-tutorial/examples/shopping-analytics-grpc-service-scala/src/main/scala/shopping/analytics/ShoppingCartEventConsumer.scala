@@ -49,27 +49,27 @@ object ShoppingCartEventConsumer {
 
       event match {
         case itemAdded: ItemAdded =>
-          log.debug(
+          log.info(
             "Projection [{}] consumed ItemAdded for cart {}, added {} {}. Total [{}] events.",
             projectionId.id,
             itemAdded.cartId,
             itemAdded.quantity,
             itemAdded.itemId)
         case quantityAdjusted: ItemQuantityAdjusted =>
-          log.debug(
+          log.info(
             "Projection [{}] consumed ItemQuantityAdjusted for cart {}, changed {} {}. Total [{}] events.",
             projectionId.id,
             quantityAdjusted.cartId,
             quantityAdjusted.quantity,
             quantityAdjusted.itemId)
         case itemRemoved: ItemRemoved =>
-          log.debug(
+          log.info(
             "Projection [{}] consumed ItemRemoved for cart {}, removed {}. Total [{}] events.",
             projectionId.id,
             itemRemoved.cartId,
             itemRemoved.itemId)
         case checkedOut: CheckedOut =>
-          log.debug(
+          log.info(
             "Projection [{}] consumed CheckedOut for cart {}. Total [{}] events.",
             projectionId.id,
             checkedOut.cartId)

@@ -42,7 +42,7 @@ object Main {
 //    PublishEventsProjectionToKafka.init(system)
 
     // tag::SendOrderProjection[]
-//    SendOrderProjection.init(system, orderService) // <1>
+    SendOrderProjection.init(system, orderService) // <1>
     // end::SendOrderProjection[]
 
     val eventProducerService = PublishEventsGrpc.eventProducerService(system)
