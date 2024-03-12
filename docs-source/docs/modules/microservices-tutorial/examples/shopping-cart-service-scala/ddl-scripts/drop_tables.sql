@@ -17,5 +17,3 @@ DROP TABLE IF EXISTS public.akka_projection_offset_store;
 DROP TABLE IF EXISTS public.akka_projection_timestamp_offset_store;
 
 DROP TABLE IF EXISTS public.akka_projection_management;
-
-DROP TABLE IF EXISTS public.item_popularity;

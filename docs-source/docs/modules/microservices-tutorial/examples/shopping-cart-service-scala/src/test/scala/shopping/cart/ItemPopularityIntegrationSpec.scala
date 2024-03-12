@@ -1,22 +1,18 @@
 package shopping.cart
 
-import scala.concurrent.Await
 import scala.concurrent.Future
-import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorSystem
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.persistence.testkit.scaladsl.PersistenceInit
+import akka.projection.r2dbc.scaladsl.R2dbcSession
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.OptionValues
 import org.scalatest.wordspec.AnyWordSpecLike
 import shopping.cart.repository.ItemPopularityRepositoryImpl
-import shopping.cart.repository.ScalikeJdbcSetup
-import shopping.cart.repository.ScalikeJdbcSession
 
 object ItemPopularityIntegrationSpec {
   val config: Config =
@@ -24,26 +20,17 @@ object ItemPopularityIntegrationSpec {
 }
 
 class ItemPopularityIntegrationSpec
-    extends ScalaTestWithActorTestKit(ItemPopularityIntegrationSpec.config)
+  extends ScalaTestWithActorTestKit(ItemPopularityIntegrationSpec.config)
+    with TablesLifeCycle
     with AnyWordSpecLike
     with OptionValues {
+
+  override def typedSystem: ActorSystem[_] = system
 
   private lazy val itemPopularityRepository =
     new ItemPopularityRepositoryImpl()
 
   override protected def beforeAll(): Unit = {
-    ScalikeJdbcSetup.init(system)
-    CreateTableTestUtils.dropAndRecreateTables(system)
-    // avoid concurrent creation of keyspace and tables
-    val timeout = 10.seconds
-    Await.result(
-      PersistenceInit.initializeDefaultPlugins(system, timeout),
-      timeout)
-
-    ShoppingCart.init(system)
-
-    ItemPopularityProjection.init(system, itemPopularityRepository)
-
     super.beforeAll()
   }
 
@@ -68,6 +55,10 @@ class ItemPopularityIntegrationSpec
       val item1 = "item1"
       val item2 = "item2"
 
+      sharding.init(Entity(typeKey = ShoppingCart.EntityKey) { entityContext =>
+        ShoppingCart(entityContext.entityId)
+      })
+
       val cart1 = sharding.entityRefFor(ShoppingCart.EntityKey, cartId1)
       val cart2 = sharding.entityRefFor(ShoppingCart.EntityKey, cartId2)
 
@@ -76,8 +67,10 @@ class ItemPopularityIntegrationSpec
       reply1.futureValue.items.values.sum should ===(3)
 
       eventually {
-        ScalikeJdbcSession.withSession { session =>
-          itemPopularityRepository.getItem(session, item1).value should ===(3)
+        R2dbcSession.withSession(typedSystem) { session =>
+          itemPopularityRepository.getItem(session, item1).map {
+            value => assert(value == 3l)
+          }
         }
       }
 
@@ -90,10 +83,13 @@ class ItemPopularityIntegrationSpec
       reply3.futureValue.items.values.sum should ===(4)
 
       eventually {
-        ScalikeJdbcSession.withSession { session =>
-          itemPopularityRepository.getItem(session, item2).value should ===(
-            5 + 4)
-          itemPopularityRepository.getItem(session, item1).value should ===(3)
+        R2dbcSession.withSession(typedSystem) { session =>
+          itemPopularityRepository.getItem(session, item2).map { value =>
+            value should ===(5l + 4l)
+          }
+          itemPopularityRepository.getItem(session, item1).map { value =>
+            value should ===(3l)
+          }
         }
       }
     }

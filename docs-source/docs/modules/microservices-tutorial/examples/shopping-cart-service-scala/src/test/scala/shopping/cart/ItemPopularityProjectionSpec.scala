@@ -1,19 +1,20 @@
 package shopping.cart
 
 import java.time.Instant
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.query.Offset
+import akka.persistence.query.typed.EventEnvelope
 import akka.projection.ProjectionId
-import akka.projection.eventsourced.EventEnvelope
+import akka.projection.r2dbc.scaladsl.R2dbcSession
 import akka.projection.scaladsl.Handler
 import akka.projection.testkit.scaladsl.TestProjection
 import akka.projection.testkit.scaladsl.TestSourceProvider
 import akka.projection.testkit.scaladsl.ProjectionTestKit
 import akka.stream.scaladsl.Source
 import org.scalatest.wordspec.AnyWordSpecLike
-import shopping.cart.repository.{ ItemPopularityRepository, ScalikeJdbcSession }
+import shopping.cart.repository.ItemPopularityRepository
 
 object ItemPopularityProjectionSpec {
   // stub out the db layer and simulate recording item count updates
@@ -21,16 +22,17 @@ object ItemPopularityProjectionSpec {
     var counts: Map[String, Long] = Map.empty
 
     override def update(
-        session: ScalikeJdbcSession,
+        session: R2dbcSession,
         itemId: String,
-        delta: Int): Unit = {
+        delta: Int): Future[Long] = {
       counts = counts + (itemId -> (counts.getOrElse(itemId, 0L) + delta))
+      Future.successful(1)
     }
 
     override def getItem(
-        session: ScalikeJdbcSession,
-        itemId: String): Option[Long] =
-      counts.get(itemId)
+        session: R2dbcSession,
+        itemId: String): Future[Option[Long]] =
+      Future.successful(counts.get(itemId))
   }
 }
 
@@ -41,16 +43,18 @@ class ItemPopularityProjectionSpec
 
   private val projectionTestKit = ProjectionTestKit(system)
 
-  private def createEnvelope(
-      event: ShoppingCart.Event,
+  private def createEnvelope[T](
+      event: T,
       seqNo: Long,
-      timestamp: Long = 0L) =
-    EventEnvelope(
+      timestamp: Long = 0L): EventEnvelope[T] =
+    EventEnvelope[T](
       Offset.sequence(seqNo),
       "persistenceId",
       seqNo,
       event,
-      timestamp)
+      timestamp,
+    "ShoppingCart",
+      1)
 
   private def toAsyncHandler(itemHandler: ItemPopularityProjectionHandler)(
       implicit
