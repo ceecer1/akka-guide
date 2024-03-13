@@ -1,4 +1,4 @@
-name := "shopping-analytics-grpc-service"
+name := "shopping-analytics-service"
 
 organization := "com.lightbend.akka.samples"
 organizationHomepage := Some(url("https://akka.io"))
