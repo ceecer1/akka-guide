@@ -1,0 +1,8 @@
+= Implementing Zero Trust with Akka
+
+include::ROOT:partial$include.adoc[]
+
+== Client certificates
+
+== JSON Web Tokens (JWT)
+
