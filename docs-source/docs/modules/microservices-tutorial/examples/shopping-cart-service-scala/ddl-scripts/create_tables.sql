@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS public.event_journal(
+CREATE TABLE IF NOT EXISTS event_journal(
                                             slice INT NOT NULL,
                                             entity_type VARCHAR(255) NOT NULL,
     persistence_id VARCHAR(255) NOT NULL,
@@ -21,10 +21,9 @@ CREATE TABLE IF NOT EXISTS public.event_journal(
     PRIMARY KEY(persistence_id, seq_nr)
     );
 
--- `event_journal_slice_idx` is only needed if the slice based queries are used
-CREATE INDEX IF NOT EXISTS event_journal_slice_idx ON public.event_journal(slice, entity_type, db_timestamp, seq_nr);
+CREATE INDEX IF NOT EXISTS event_journal_slice_idx ON event_journal(slice, entity_type, db_timestamp, seq_nr);
 
-CREATE TABLE IF NOT EXISTS public.snapshot(
+CREATE TABLE IF NOT EXISTS snapshot(
                                        slice INT NOT NULL,
                                        entity_type VARCHAR(255) NOT NULL,
     persistence_id VARCHAR(255) NOT NULL,
@@ -43,9 +42,9 @@ CREATE TABLE IF NOT EXISTS public.snapshot(
     );
 
 -- `snapshot_slice_idx` is only needed if the slice based queries are used together with snapshot as starting point
-CREATE INDEX IF NOT EXISTS snapshot_slice_idx ON public.snapshot(slice, entity_type, db_timestamp);
+CREATE INDEX IF NOT EXISTS snapshot_slice_idx ON snapshot(slice, entity_type, db_timestamp);
 
-CREATE TABLE IF NOT EXISTS public.durable_state (
+CREATE TABLE IF NOT EXISTS durable_state (
                                              slice INT NOT NULL,
                                              entity_type VARCHAR(255) NOT NULL,
     persistence_id VARCHAR(255) NOT NULL,
@@ -61,12 +60,12 @@ CREATE TABLE IF NOT EXISTS public.durable_state (
     );
 
 -- `durable_state_slice_idx` is only needed if the slice based queries are used
-CREATE INDEX IF NOT EXISTS durable_state_slice_idx ON public.durable_state(slice, entity_type, db_timestamp, revision);
+CREATE INDEX IF NOT EXISTS durable_state_slice_idx ON durable_state(slice, entity_type, db_timestamp, revision);
 
 -- Primitive offset types are stored in this table.
 -- If only timestamp based offsets are used this table is optional.
 -- Configure akka.projection.r2dbc.offset-store.offset-table="" if the table is not created.
-CREATE TABLE IF NOT EXISTS public.akka_projection_offset_store (
+CREATE TABLE IF NOT EXISTS akka_projection_offset_store (
     projection_name VARCHAR(255) NOT NULL,
     projection_key VARCHAR(255) NOT NULL,
     current_offset VARCHAR(255) NOT NULL,
@@ -77,7 +76,7 @@ CREATE TABLE IF NOT EXISTS public.akka_projection_offset_store (
     );
 
 -- Timestamp based offsets are stored in this table.
-CREATE TABLE IF NOT EXISTS public.akka_projection_timestamp_offset_store (
+CREATE TABLE IF NOT EXISTS akka_projection_timestamp_offset_store (
     projection_name VARCHAR(255) NOT NULL,
     projection_key VARCHAR(255) NOT NULL,
     slice INT NOT NULL,
@@ -91,7 +90,7 @@ CREATE TABLE IF NOT EXISTS public.akka_projection_timestamp_offset_store (
                                      PRIMARY KEY(slice, projection_name, timestamp_offset, persistence_id, seq_nr)
     );
 
-CREATE TABLE IF NOT EXISTS public.akka_projection_management (
+CREATE TABLE IF NOT EXISTS akka_projection_management (
     projection_name VARCHAR(255) NOT NULL,
     projection_key VARCHAR(255) NOT NULL,
     paused BOOLEAN NOT NULL,
