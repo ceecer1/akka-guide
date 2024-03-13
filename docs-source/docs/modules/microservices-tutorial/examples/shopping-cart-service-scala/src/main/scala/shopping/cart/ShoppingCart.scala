@@ -70,14 +70,7 @@ object ShoppingCart {
     //#tags
     def totalQuantity: Int =
       items.map { case (_, quantity) => quantity }.sum
-
-    def tags: Set[String] = {
-      val total = totalQuantity
-      if (total == 0) Set.empty
-      else if (total >= 100) Set(LargeQuantityTag)
-      else if (total >= 10) Set(MediumQuantityTag)
-      else Set(SmallQuantityTag)
-    }
+    
   }
   object State {
     val empty =
@@ -166,12 +159,6 @@ object ShoppingCart {
 
   val EntityKey: EntityTypeKey[Command] =
     EntityTypeKey[Command]("ShoppingCart")
-  // tag::tagging[]
-
-  //#tags
-  val SmallQuantityTag = "small"
-  val MediumQuantityTag = "medium"
-  val LargeQuantityTag = "large"
 
   // tag::howto-write-side-without-role[]
   def init(system: ActorSystem[_]): Unit = {
@@ -179,9 +166,7 @@ object ShoppingCart {
       ShoppingCart(entityContext.entityId)))
   }
   // end::howto-write-side-without-role[]
-  // end::tagging[]
 
-  // tag::withTagger[]
   def apply(cartId: String): Behavior[Command] = {
     EventSourcedBehavior
       .withEnforcedReplies[Command, Event, State](
@@ -190,15 +175,11 @@ object ShoppingCart {
         commandHandler =
           (state, command) => handleCommand(cartId, state, command),
         eventHandler = (state, event) => handleEvent(state, event))
-      .withTaggerForState{ case (state, _) =>
-        state.tags
-      } // <1>
       .withRetention(RetentionCriteria
         .snapshotEvery(numberOfEvents = 100))
       .onPersistFailure(
         SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
   }
-  // end::withTagger[]
 
   // tag::commandHandlers[]
   private def handleCommand(

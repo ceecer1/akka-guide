@@ -18,30 +18,23 @@ object PublishEventsGrpc {
   def eventProducerService(system: ActorSystem[_])
   : PartialFunction[HttpRequest, Future[HttpResponse]] = {
     val transformation = Transformation.identity
-      .registerAsyncEnvelopeMapper[ShoppingCart.ItemAdded, proto.ItemAdded](envelope =>
-        Future.successful(Some(transformItemUpdated(envelope))))
-      .registerAsyncEnvelopeMapper[ShoppingCart.ItemQuantityAdjusted, proto.ItemQuantityAdjusted](envelope =>
-        Future.successful(Some(transformItemAdjusted(envelope))))
-      .registerAsyncEnvelopeMapper[ShoppingCart.ItemRemoved, proto.ItemRemoved](envelope =>
-        Future.successful(Some(transformItemRemoved(envelope))))
-      .registerAsyncEnvelopeMapper[ShoppingCart.CheckedOut, proto.CheckedOut](envelope =>
-        Future.successful(Some(transformCheckedOut(envelope))))
+      .registerEnvelopeMapper[ShoppingCart.ItemAdded, proto.ItemAdded](envelope =>
+        Some(transformItemUpdated(envelope)))
+      .registerEnvelopeMapper[ShoppingCart.ItemQuantityAdjusted, proto.ItemQuantityAdjusted](envelope =>
+        Some(transformItemAdjusted(envelope)))
+      .registerEnvelopeMapper[ShoppingCart.ItemRemoved, proto.ItemRemoved](envelope =>
+        Some(transformItemRemoved(envelope)))
+      .registerEnvelopeMapper[ShoppingCart.CheckedOut, proto.CheckedOut](envelope =>
+        Some(transformCheckedOut(envelope)))
 
-    //#withProducerFilter
+    //#eventProducerService
     val eventProducerSource = EventProducer
       .EventProducerSource(
         "ShoppingCart",
         "cart",
         transformation,
         EventProducerSettings(system))
-      //#eventProducerService
-      .withProducerFilter[ShoppingCart.Event] { envelope =>
-        val tags = envelope.tags
-        tags.contains(ShoppingCart.MediumQuantityTag) ||
-          tags.contains(ShoppingCart.LargeQuantityTag)
-      }
     //#eventProducerService
-    //#withProducerFilter
 
     EventProducer.grpcServiceHandler(eventProducerSource)(system)
   }
