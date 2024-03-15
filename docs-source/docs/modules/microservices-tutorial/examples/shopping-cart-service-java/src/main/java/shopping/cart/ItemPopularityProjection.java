@@ -4,64 +4,74 @@ package shopping.cart;
 import akka.actor.typed.ActorSystem;
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings;
 import akka.cluster.sharding.typed.javadsl.ShardedDaemonProcess;
-import akka.persistence.jdbc.query.javadsl.JdbcReadJournal;
+import akka.japi.Pair;
 import akka.persistence.query.Offset;
+import akka.persistence.query.typed.EventEnvelope;
+import akka.persistence.r2dbc.query.javadsl.R2dbcReadJournal;
 import akka.projection.ProjectionBehavior;
 import akka.projection.ProjectionId;
-import akka.projection.eventsourced.EventEnvelope;
 import akka.projection.eventsourced.javadsl.EventSourcedProvider;
 import akka.projection.javadsl.ExactlyOnceProjection;
 import akka.projection.javadsl.SourceProvider;
-import akka.projection.jdbc.javadsl.JdbcProjection;
+import akka.projection.r2dbc.javadsl.R2dbcProjection;
+
+import java.util.List;
 import java.util.Optional;
-import org.springframework.orm.jpa.JpaTransactionManager;
-import shopping.cart.repository.HibernateJdbcSession;
+import akka.projection.r2dbc.R2dbcProjectionSettings;
 import shopping.cart.repository.ItemPopularityRepository;
 
 public final class ItemPopularityProjection {
 
-  private ItemPopularityProjection() {}
+    private ItemPopularityProjection() {
+    }
 
-  // tag::howto-read-side-without-role[]
-  public static void init(
-      ActorSystem<?> system,
-      JpaTransactionManager transactionManager,
-      ItemPopularityRepository repository) {
+    // tag::howto-read-side-without-role[]
+    public static void init(
+            ActorSystem<?> system,
+            ItemPopularityRepository repository) {
 
-    ShardedDaemonProcess.get(system)
-        .init( // <1>
-            ProjectionBehavior.Command.class,
-            "ItemPopularityProjection",
-            ShoppingCart.TAGS.size(),
-            index ->
-                ProjectionBehavior.create(
-                    createProjectionFor(system, transactionManager, repository, index)),
-            ShardedDaemonProcessSettings.create(system),
-            Optional.of(ProjectionBehavior.stopMessage()));
-  }
-  // end::howto-read-side-without-role[]
+        ShardedDaemonProcess.get(system)
+                .initWithContext( // <1>
+                        ProjectionBehavior.Command.class,
+                        "ItemPopularityProjection",
+                        4,
+                        daemonContext -> {
+                            List<Pair<Integer, Integer>> sliceRanges =
+                                    EventSourcedProvider.sliceRanges(system, R2dbcReadJournal.Identifier(), daemonContext.totalProcesses());
+                            Pair<Integer, Integer> sliceRange =
+                                    sliceRanges.get(daemonContext.processNumber());
+                            return ProjectionBehavior.create(createProjection(system, repository, sliceRange));
+                        },
+                        ShardedDaemonProcessSettings.create(system),
+                        Optional.of(ProjectionBehavior.stopMessage()));
+    }
+    // end::howto-read-side-without-role[]
 
-  private static ExactlyOnceProjection<Offset, EventEnvelope<ShoppingCart.Event>>
-      createProjectionFor(
-          ActorSystem<?> system,
-          JpaTransactionManager transactionManager,
-          ItemPopularityRepository repository,
-          int index) {
+    private static ExactlyOnceProjection<Offset, EventEnvelope<ShoppingCart.Event>>
+    createProjection(
+            ActorSystem<?> system,
+            ItemPopularityRepository repository,
+            Pair<Integer, Integer> sliceRange) {
 
-    String tag = ShoppingCart.TAGS.get(index); // <2>
+        int minSlice = sliceRange.first();
+        int maxSlice = sliceRange.second();
 
-    SourceProvider<Offset, EventEnvelope<ShoppingCart.Event>> sourceProvider = // <3>
-        EventSourcedProvider.eventsByTag(
-            system,
-            JdbcReadJournal.Identifier(), // <4>
-            tag);
+        SourceProvider<Offset, EventEnvelope<ShoppingCart.Event>> sourceProvider =
+                EventSourcedProvider.eventsBySlices(
+                        system,
+                        R2dbcReadJournal.Identifier(),
+                        "ShoppingCart",
+                        minSlice,
+                        maxSlice);
 
-    return JdbcProjection.exactlyOnce( // <5>
-        ProjectionId.of("ItemPopularityProjection", tag),
-        sourceProvider,
-        () -> new HibernateJdbcSession(transactionManager), // <6>
-        () -> new ItemPopularityProjectionHandler(tag, repository), // <7>
-        system);
-  }
+        String slice = "carts-" + minSlice + "-" + maxSlice;
+        Optional<R2dbcProjectionSettings> settings = Optional.empty();
+        return R2dbcProjection.exactlyOnce( // <5>
+                ProjectionId.of("ItemPopularityProjection", slice),
+                settings,
+                sourceProvider,
+                () -> new ItemPopularityProjectionHandler(slice, repository),
+                system);
+    }
 }
 // end::projection[]

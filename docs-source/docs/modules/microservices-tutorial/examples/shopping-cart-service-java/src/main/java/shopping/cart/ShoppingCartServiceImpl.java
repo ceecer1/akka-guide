@@ -28,14 +28,9 @@ public final class ShoppingCartServiceImpl implements ShoppingCartService {
 
   // tag::getItemPopularity[]
   private final ItemPopularityRepository repository;
-  private final Executor blockingJdbcExecutor;
 
   public ShoppingCartServiceImpl(
       ActorSystem<?> system, ItemPopularityRepository repository) { // <1>
-
-    DispatcherSelector dispatcherSelector =
-        DispatcherSelector.fromConfig("akka.projection.jdbc.blocking-jdbc-dispatcher");
-    this.blockingJdbcExecutor = system.dispatchers().lookup(dispatcherSelector); // <2>
 
     this.repository = repository;
     timeout = system.settings().config().getDuration("shopping-cart-service.ask-timeout");
@@ -53,6 +48,19 @@ public final class ShoppingCartServiceImpl implements ShoppingCartService {
         entityRef.askWithStatus(
             replyTo -> new ShoppingCart.AddItem(in.getItemId(), in.getQuantity(), replyTo),
             timeout);
+    CompletionStage<Cart> cart = reply.thenApply(ShoppingCartServiceImpl::toProtoCart);
+    return convertError(cart);
+  }
+
+  @Override
+  public CompletionStage<Cart> removeItem(RemoveItemRequest in) {
+    logger.info("updateItem {}", in.getCartId());
+    EntityRef<ShoppingCart.Command> entityRef =
+            sharding.entityRefFor(ShoppingCart.ENTITY_KEY, in.getCartId());
+    CompletionStage<ShoppingCart.Summary> reply =
+            entityRef.askWithStatus(
+                    replyTo -> new ShoppingCart.RemoveItem(in.getItemId(), replyTo),
+                    timeout);
     CompletionStage<Cart> cart = reply.thenApply(ShoppingCartServiceImpl::toProtoCart);
     return convertError(cart);
   }
@@ -113,15 +121,16 @@ public final class ShoppingCartServiceImpl implements ShoppingCartService {
   @Override
   public CompletionStage<GetItemPopularityResponse> getItemPopularity(GetItemPopularityRequest in) {
 
-    CompletionStage<Optional<ItemPopularity>> itemPopularity =
-        CompletableFuture.supplyAsync(
-            () -> repository.findById(in.getItemId()), blockingJdbcExecutor); // <3>
-
-    return itemPopularity.thenApply(
-        popularity -> {
-          long count = popularity.map(ItemPopularity::getCount).orElse(0L);
-          return GetItemPopularityResponse.newBuilder().setPopularityCount(count).build();
-        });
+//    CompletionStage<Optional<ItemPopularity>> itemPopularity =
+//        CompletableFuture.supplyAsync(
+//            () -> repository.findById(in.getItemId()), blockingJdbcExecutor); // <3>
+//
+//    return itemPopularity.thenApply(
+//        popularity -> {
+//          long count = popularity.map(ItemPopularity::getCount).orElse(0L);
+//          return GetItemPopularityResponse.newBuilder().setPopularityCount(count).build();
+//        });
+    return null;
   }
   // end::getItemPopularity[]
 

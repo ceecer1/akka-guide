@@ -299,49 +299,29 @@ public final class ShoppingCart
   static final EntityTypeKey<Command> ENTITY_KEY =
       EntityTypeKey.create(Command.class, "ShoppingCart");
 
-  // tag::tagging[]
-  static final List<String> TAGS =
-      Collections.unmodifiableList(
-          Arrays.asList("carts-0", "carts-1", "carts-2", "carts-3", "carts-4"));
-
-  // tag::howto-write-side-without-role[]
   public static void init(ActorSystem<?> system) {
     ClusterSharding.get(system)
         .init(
             Entity.of(
                 ENTITY_KEY,
                 entityContext -> {
-                  int i = Math.abs(entityContext.getEntityId().hashCode() % TAGS.size());
-                  String selectedTag = TAGS.get(i);
-                  return ShoppingCart.create(entityContext.getEntityId(), selectedTag);
+                  return ShoppingCart.create(entityContext.getEntityId());
                 }));
   }
-  // end::howto-write-side-without-role[]
-  // end::tagging[]
 
-  // tag::withTagger[]
-  public static Behavior<Command> create(String cartId, String projectionTag) {
+  public static Behavior<Command> create(String cartId) {
     return Behaviors.setup(
-        ctx -> EventSourcedBehavior.start(new ShoppingCart(cartId, projectionTag), ctx));
+        ctx -> EventSourcedBehavior.start(new ShoppingCart(cartId), ctx));
   }
-
-  private final String projectionTag;
 
   private final String cartId;
 
-  private ShoppingCart(String cartId, String projectionTag) {
+  private ShoppingCart(String cartId) {
     super(
         PersistenceId.of(ENTITY_KEY.name(), cartId),
         SupervisorStrategy.restartWithBackoff(Duration.ofMillis(200), Duration.ofSeconds(5), 0.1));
     this.cartId = cartId;
-    this.projectionTag = projectionTag;
   }
-
-  @Override
-  public Set<String> tagsFor(Event event) { // <1>
-    return Collections.singleton(projectionTag);
-  }
-  // end::withTagger[]
 
   @Override
   public RetentionCriteria retentionCriteria() {

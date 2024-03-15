@@ -1,12 +1,17 @@
 package shopping.cart.repository;
 
 import java.util.Optional;
-import org.springframework.data.repository.Repository;
+import java.util.concurrent.CompletionStage;
+import akka.projection.r2dbc.javadsl.R2dbcSession;
+import io.r2dbc.spi.Statement;
 import shopping.cart.ItemPopularity;
 
-public interface ItemPopularityRepository extends Repository<ItemPopularity, String> {
+public interface ItemPopularityRepository {
 
-  ItemPopularity save(ItemPopularity itemPopularity);
+  CompletionStage<Long> saveOrUpdate(R2dbcSession session, ItemPopularity itemPopularity);
 
-  Optional<ItemPopularity> findById(String id);
+  CompletionStage<Optional<ItemPopularity>> findById(R2dbcSession session, String id);
+
+  CompletionStage<Optional<Long>> getCount(R2dbcSession session, String id);
 }
+
