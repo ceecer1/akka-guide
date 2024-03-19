@@ -2,9 +2,6 @@ package shopping.cart;
 
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.Behaviors;
-// tag::SendOrderProjection[]
-import akka.grpc.GrpcClientSettings;
-// end::SendOrderProjection[]
 import akka.management.cluster.bootstrap.ClusterBootstrap;
 import akka.management.javadsl.AkkaManagement;
 import com.typesafe.config.Config;

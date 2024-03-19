@@ -2,7 +2,7 @@
 package shopping.cart;
 
 import akka.Done;
-import akka.projection.eventsourced.EventEnvelope;
+import akka.persistence.query.typed.EventEnvelope;
 import akka.projection.r2dbc.javadsl.R2dbcHandler;
 import akka.projection.r2dbc.javadsl.R2dbcSession;
 import org.slf4j.Logger;
