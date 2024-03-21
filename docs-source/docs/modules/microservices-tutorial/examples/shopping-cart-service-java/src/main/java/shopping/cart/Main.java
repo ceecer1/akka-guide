@@ -2,6 +2,7 @@ package shopping.cart;
 
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.grpc.GrpcClientSettings;
 import akka.management.cluster.bootstrap.ClusterBootstrap;
 import akka.management.javadsl.AkkaManagement;
 import com.typesafe.config.Config;
@@ -11,8 +12,8 @@ import shopping.cart.proto.ShoppingCartService;
 import shopping.cart.repository.ItemPopularityRepository;
 import shopping.cart.repository.ItemPopularityRepositoryImpl;
 // tag::SendOrderProjection[]
-//import shopping.order.proto.ShoppingOrderService;
-//import shopping.order.proto.ShoppingOrderServiceClient;
+import shopping.order.proto.ShoppingOrderService;
+import shopping.order.proto.ShoppingOrderServiceClient;
 
 public class Main {
   // end::SendOrderProjection[]
@@ -23,16 +24,14 @@ public class Main {
   public static void main(String[] args) {
     ActorSystem<Void> system = ActorSystem.create(Behaviors.empty(), "shopping-cart-service");
     try {
-//      init(system, orderServiceClient(system));
-      init(system);
+      init(system, orderServiceClient(system));
     } catch (Exception e) {
       logger.error("Terminating due to initialization failure.", e);
       system.terminate();
     }
   }
 
-  public static void init(ActorSystem<Void> system) {
-//  public static void init(ActorSystem<Void> system, ShoppingOrderService orderService) {
+  public static void init(ActorSystem<Void> system, ShoppingOrderService orderService) {
     // end::SendOrderProjection[]
     AkkaManagement.get(system).start();
     ClusterBootstrap.get(system).start();
@@ -44,7 +43,7 @@ public class Main {
 //    PublishEventsProjection.init(system, transactionManager);
 
     // tag::SendOrderProjection[]
-//    SendOrderProjection.init(system, transactionManager, orderService); // <1>
+    SendOrderProjection.init(system, orderService); // <1>
     // end::SendOrderProjection[]
 
     Config config = system.settings().config();
@@ -55,16 +54,16 @@ public class Main {
     // tag::SendOrderProjection[]
   }
 
-//  static ShoppingOrderService orderServiceClient(ActorSystem<?> system) { // <2>
-//    GrpcClientSettings orderServiceClientSettings =
-//        GrpcClientSettings.connectToServiceAt(
-//                system.settings().config().getString("shopping-order-service.host"),
-//                system.settings().config().getInt("shopping-order-service.port"),
-//                system)
-//            .withTls(false);
-//
-//    return ShoppingOrderServiceClient.create(orderServiceClientSettings, system);
-//  }
+  static ShoppingOrderService orderServiceClient(ActorSystem<?> system) { // <2>
+    GrpcClientSettings orderServiceClientSettings =
+        GrpcClientSettings.connectToServiceAt(
+                system.settings().config().getString("shopping-order-service.host"),
+                system.settings().config().getInt("shopping-order-service.port"),
+                system)
+            .withTls(false);
+
+    return ShoppingOrderServiceClient.create(orderServiceClientSettings, system);
+  }
   // end::SendOrderProjection[]
 
 }
