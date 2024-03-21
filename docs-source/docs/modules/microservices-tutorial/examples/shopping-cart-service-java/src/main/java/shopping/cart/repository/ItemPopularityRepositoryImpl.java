@@ -2,6 +2,8 @@ package shopping.cart.repository;
 
 import akka.projection.r2dbc.javadsl.R2dbcSession;
 import io.r2dbc.spi.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import shopping.cart.ItemPopularity;
 
 import java.util.Optional;
@@ -19,13 +21,12 @@ public class ItemPopularityRepositoryImpl implements ItemPopularityRepository {
 
     @Override
     public CompletionStage<Optional<ItemPopularity>> findById(R2dbcSession session, String id) {
-        String selectStmt = String.format("SELECT itemid, version, count FROM item_popularity WHERE itemid = '%s'", id);
+        String selectStmt = String.format("SELECT itemid, count FROM item_popularity WHERE itemid = '%s'", id);
         Statement statement = session.createStatement(selectStmt);
 
         return session.selectOne(statement, row ->
                 new ItemPopularity(
                         row.get("itemid", String.class),
-                        row.get("version", Long.class),
                         row.get("count", Long.class))
 
         );

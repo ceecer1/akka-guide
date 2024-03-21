@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import shopping.cart.repository.ItemPopularityRepository;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public final class ItemPopularityProjectionHandler
@@ -23,7 +24,7 @@ public final class ItemPopularityProjectionHandler
     }
 
     private CompletionStage<ItemPopularity> findOrNew(R2dbcSession session, String itemId) {
-        return repo.findById(session, itemId).thenApply(ip -> ip.orElseGet(() -> new ItemPopularity(itemId, 0, 0)));
+        return repo.findById(session, itemId).thenApply(ip -> ip.orElseGet(() -> new ItemPopularity(itemId, 0)));
     }
 
     @Override
@@ -36,9 +37,9 @@ public final class ItemPopularityProjectionHandler
             String itemId = added.itemId;
 
             CompletionStage<ItemPopularity> existingItemPop = findOrNew(session, itemId);
-            CompletionStage<ItemPopularity> updatedItemPop = existingItemPop.thenApply(itemPop -> itemPop.changeCount(added.quantity));
-            CompletionStage<Long> updated = updatedItemPop.thenCompose(itm -> repo.saveOrUpdate(session, itm));
-            return updated.thenApply(rows -> {
+            CompletionStage<ItemPopularity> updatedItemPop = existingItemPop.thenApplyAsync(itemPop -> itemPop.changeCount(added.quantity));
+            CompletionStage<Long> updated = updatedItemPop.thenComposeAsync(itm -> repo.saveOrUpdate(session, itm));
+            return updated.thenApplyAsync(rows -> {
                 logCount(itemId, rows);
                 return Done.getInstance();
             });
@@ -48,11 +49,11 @@ public final class ItemPopularityProjectionHandler
             String itemId = adjusted.itemId;
 
             CompletionStage<ItemPopularity> existingItemPop = findOrNew(session, itemId);
-            CompletionStage<ItemPopularity> updatedItemPop = existingItemPop.thenApply(itemPop ->
+            CompletionStage<ItemPopularity> updatedItemPop = existingItemPop.thenApplyAsync(itemPop ->
                     itemPop.changeCount(adjusted.newQuantity - adjusted.oldQuantity));
-            CompletionStage<Long> updated = updatedItemPop.thenCompose(itm -> repo.saveOrUpdate(session, itm));
+            CompletionStage<Long> updated = updatedItemPop.thenComposeAsync(itm -> repo.saveOrUpdate(session, itm));
 
-            return updated.thenApply(rows -> {
+            return updated.thenApplyAsync(rows -> {
                 logCount(itemId, rows);
                 return Done.getInstance();
             });
@@ -62,16 +63,16 @@ public final class ItemPopularityProjectionHandler
             String itemId = removed.itemId;
 
             CompletionStage<ItemPopularity> existingItemPop = findOrNew(session, itemId);
-            CompletionStage<ItemPopularity> updatedItemPop = existingItemPop.thenApply(itemPop -> itemPop.changeCount(-removed.oldQuantity));
-            CompletionStage<Long> updated = updatedItemPop.thenCompose(itm -> repo.saveOrUpdate(session, itm));
-            return updated.thenApply(rows -> {
+            CompletionStage<ItemPopularity> updatedItemPop = existingItemPop.thenApplyAsync(itemPop -> itemPop.changeCount(-removed.oldQuantity));
+            CompletionStage<Long> updated = updatedItemPop.thenComposeAsync(itm -> repo.saveOrUpdate(session, itm));
+            return updated.thenApplyAsync(rows -> {
                 logCount(itemId, rows);
                 return Done.getInstance();
             });
             // tag::handler[]
         } else {
             // skip all other events, such as `CheckedOut`
-          return null;
+          return CompletableFuture.completedFuture(Done.getInstance());
         }
     }
 

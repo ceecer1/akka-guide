@@ -1,17 +1,15 @@
 package shopping.cart;
 
 import akka.actor.typed.ActorSystem;
-import akka.actor.typed.DispatcherSelector;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.grpc.GrpcServiceException;
+import akka.projection.r2dbc.javadsl.R2dbcSession;
 import io.grpc.Status;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -29,9 +27,12 @@ public final class ShoppingCartServiceImpl implements ShoppingCartService {
   // tag::getItemPopularity[]
   private final ItemPopularityRepository repository;
 
+  private final ActorSystem<?> sys;
+
   public ShoppingCartServiceImpl(
       ActorSystem<?> system, ItemPopularityRepository repository) { // <1>
 
+    this.sys = system;
     this.repository = repository;
     timeout = system.settings().config().getDuration("shopping-cart-service.ask-timeout");
     sharding = ClusterSharding.get(system);
@@ -121,16 +122,16 @@ public final class ShoppingCartServiceImpl implements ShoppingCartService {
   @Override
   public CompletionStage<GetItemPopularityResponse> getItemPopularity(GetItemPopularityRequest in) {
 
-//    CompletionStage<Optional<ItemPopularity>> itemPopularity =
-//        CompletableFuture.supplyAsync(
-//            () -> repository.findById(in.getItemId()), blockingJdbcExecutor); // <3>
-//
-//    return itemPopularity.thenApply(
-//        popularity -> {
-//          long count = popularity.map(ItemPopularity::getCount).orElse(0L);
-//          return GetItemPopularityResponse.newBuilder().setPopularityCount(count).build();
-//        });
-    return null;
+    CompletionStage<Optional<ItemPopularity>> itemPopularity =
+            R2dbcSession.withSession(sys,
+                            (session) -> repository.findById(session, in.getItemId())
+            );
+
+    return itemPopularity.thenApply(
+        popularity -> {
+          long count = popularity.map(ItemPopularity::getCount).orElse(0L);
+          return GetItemPopularityResponse.newBuilder().setPopularityCount(count).build();
+        });
   }
   // end::getItemPopularity[]
 

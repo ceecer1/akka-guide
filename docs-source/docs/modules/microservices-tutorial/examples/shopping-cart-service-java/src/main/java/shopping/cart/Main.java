@@ -38,14 +38,8 @@ public class Main {
     ClusterBootstrap.get(system).start();
 
     ShoppingCart.init(system);
-
-//    ApplicationContext springContext = SpringIntegration.applicationContext(system);
-
     ItemPopularityRepository itemPopularityRepository = new ItemPopularityRepositoryImpl();
-//
-//    JpaTransactionManager transactionManager = springContext.getBean(JpaTransactionManager.class);
-
-//    ItemPopularityProjection.init(system, transactionManager, itemPopularityRepository);
+    ItemPopularityProjection.init(system, itemPopularityRepository);
 
 //    PublishEventsProjection.init(system, transactionManager);
 

@@ -12,6 +12,7 @@ import akka.pattern.StatusReply;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import akka.serialization.jackson.CborSerializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
