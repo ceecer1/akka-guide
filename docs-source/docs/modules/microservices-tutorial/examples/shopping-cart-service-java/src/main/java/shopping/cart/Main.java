@@ -50,7 +50,7 @@ public class Main {
 //    Function<HttpRequest, CompletionStage<HttpResponse>> eventProducerService = PublishEventsGrpc.eventProducerService(system);
 
     // tag::SendOrderProjection[]
-//    SendOrderProjection.init(system, orderService); // <1>
+    SendOrderProjection.init(system, orderService); // <1>
     // end::SendOrderProjection[]
 
     Config config = system.settings().config();
